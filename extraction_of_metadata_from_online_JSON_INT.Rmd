@@ -1,0 +1,360 @@
+---
+header-includes:
+- \usepackage{fancyhdr}
+- \pagestyle{fancy}
+- \setlength{\headheight}{70pt}
+- \lhead{Regional Virus Laboratory/Pathogen Sequencing \\  LG.031 Institute of Pathology
+  \\ Belfast Health and Social Care Trust \\ Grosvenor Road, Belfast, BT12 6BA}
+- "\\rhead{\\includegraphics[width=4cm]{belfast_trust_logo.png}}"
+- \let\oldrule=\rule
+- \renewcommand{\rule}[1]{\oldrule{\linewidth}}
+urlcolor: blue
+params:
+  input_json: ""
+output:
+  pdf_document
+---
+
+
+```{r setup, include=FALSE}
+#Reading in packages needed and installing them if required
+#my_packages <- c("knitr","dplyr","tidyr","tidyjson","tinytex") 
+#not_installed <- my_packages[!(my_packages %in% installed.packages()[ , "Package"])]    # Extract not installed packages
+#if(length(not_installed)) install.packages(not_installed)
+library(knitr)
+library(dplyr)
+library(tidyr)
+library(tidyjson)
+library(tinytex)
+library(readxl)
+#This needs to be done in the environment on the server
+#install.packages("pacman")
+#pacman::p_load(rmarkdown,knitr,dplyr,tidyr,tidyjson,tinytex)
+```
+
+```{r include=FALSE}
+#Created by Marc Niebel May 2023
+
+#Purpose is to investigate raw JSON files produced #https://hivdb.stanford.edu/hivdb/by-reads/?cutoff=0.2(Stanford HIV db)
+#To produce a resistance report(PDF) and technical log file(csv)
+```
+
+```{r pulling out info from JSON file,eval=TRUE,echo=FALSE,warning=FALSE}
+#Read in json file
+raw_json <- read_json(params$input_json)
+#First step
+#Get sample info
+sample_info <- raw_json[[2]][[1]]$report$name
+sample_info <- sub("_.*","",sample_info)
+v_number <- sub("-.*","",sample_info)
+dir_name <- dirname(params$input_json)
+
+#Patient metadata variables#NEW
+patient_name <- ""
+patient_sex <- ""
+patient_age <- ""
+patient_number <- ""
+specimen_date_collection <- ""
+specimen_type <- ""
+date_received <- ""
+
+path <- paste0(dir_name,"/","patient_metadata_mock.xlsx")
+patient_metadata <-read_excel(path=path,col_types = c("text","text","text","text","date","text","date","text","date"))
+
+patient_metadata_date <- patient_metadata %>% 
+    mutate_at(c(5,7,9),format, "%d/%m/%Y")
+patient_metadata_name <- patient_metadata_date %>%
+  mutate_at(vars(2,3), ~ substr(.,1,1)) %>%
+  unite(Name,c(Forename,Surname),sep=",")
+
+#bind to v_number and will incorporate message if no bind occurs
+df_v_number <-data.frame(Specimen_Number=v_number)
+
+join_with_metadata <- left_join(df_v_number,patient_metadata_name,by=join_by("Specimen_Number"==`Specimen Number`))
+
+#Checking whether join was successful#NEW
+join_with_metadata <- join_with_metadata %>%
+  mutate(Join=case_when(is.na(`Patient Number`) & is.na(Name) ~"Issues",
+                        TRUE~"No issues")) %>%  mutate(
+    across(everything(), ~replace_na(.x, "")))
+join_variable <- join_with_metadata$Join 
+
+#This variable will need to be added to technical log
+if(join_variable=="Issues"){
+  meta_added <- "Problems were encountered when joining patient data. Verify that the lab number is accurate"
+}else{
+  meta_added <-"Yes"
+}
+
+patient_name <- join_with_metadata[1,2]
+patient_sex <- join_with_metadata[1,3]
+patient_age <- join_with_metadata[1,4]
+patient_number <- join_with_metadata[1,5]
+specimen_date_collection <- join_with_metadata[1,6]
+specimen_type <- join_with_metadata[1,7]
+date_received <- join_with_metadata[1,8]
+
+#First part which is region sequenced and missing areas(Note filtered for INT)
+areas_which_are_covered <- raw_json[[2]][[1]]$report$allGeneSequenceRead %>% 
+  spread_all %>% 
+  select("document.id","firstAA","lastAA","gene.name","unsequencedRegions.size") %>%
+  filter(document.id=="2") %>%
+  as_tibble()
+
+#Looking at if unsequencedRegions.size > 0
+any_unsequenced_regions <- sum(areas_which_are_covered$unsequencedRegions.size)
+
+if(any_unsequenced_regions!=0){
+  unsequenced_regions <- raw_json[[2]][[1]]$report$allGeneSequenceReads %>% enter_object(unsequencedRegions) %>%
+  enter_object(regions) %>% gather_array() %>% 
+  spread_all()  %>% 
+  select(document.id,posStart,posEnd) %>% as_tibble()
+#Adding the two type of datasets together
+data_sets_together <- left_join(areas_which_are_covered,unsequenced_regions,by="document.id")
+#Regions that are sequenced
+sequenced_regions <-data_sets_together %>% 
+  group_by(document.id) %>% 
+  mutate(sequenced_region=paste(firstAA,lastAA,sep = "-"))
+#Modifying postEnd if the same as posStart
+modifying_position_end_if_required <- sequenced_regions %>% group_by(document.id) %>%
+  mutate(posEnd=case_when(posEnd==posStart ~NA_integer_,
+                          TRUE ~ posEnd))
+#Text for each region
+part_1_df <- modifying_position_end_if_required %>%
+  unite(region, posStart:posEnd, na.rm = TRUE, sep = "-", remove = FALSE)  %>%
+  select(document.id,gene.name,region,sequenced_region) %>%
+  group_by(document.id) %>%
+  mutate(missed_regions=paste(region,collapse = ","))%>%
+  ungroup() %>%
+  select(document.id,gene.name,sequenced_region,missed_regions) %>%
+  distinct() %>%
+  mutate(missed_regions=case_when(missed_regions==""~"None",
+                                  TRUE~missed_regions))
+
+in_region <- as.character(part_1_df[1,3])
+missing_in_region <- as.character(part_1_df[1,4])
+}else{
+  sequenced_regions_only <- areas_which_are_covered %>% 
+  group_by(document.id) %>% 
+  mutate(sequenced_region=paste(firstAA,lastAA,sep = "-")) %>%
+    select(document.id,gene.name,sequenced_region)
+ in_region <- as.character(sequenced_regions_only[1,3])
+ missing_in_region <- "None"
+}
+
+#Drug resistance table####
+drug_resistance <- raw_json[[2]][[1]]$report$drugResistance %>%  enter_object(levels) %>% 
+  gather_array() %>%
+  spread_all() %>%
+  select(drug.displayAbbr,drug.fullName,drugClass.name,text) %>%
+  filter(drugClass.name=="INSTI") %>%
+  as_tibble() %>%
+  rename(Drug=drug.displayAbbr,
+         `Generic Name`=drug.fullName ,
+         Type=drugClass.name,
+                  `Resistance Call`=text)
+
+classification_of_mutations <-raw_json[[2]][[1]]$report$drugResistance %>% enter_object(mutationsByTypes) %>% 
+  gather_array() %>% 
+  spread_all() %>% 
+  select(document.id,array.index,mutationType) %>%
+  filter(document.id=="2") %>%
+  as_tibble()
+
+mutations <- raw_json[[2]][[1]]$report$drugResistance %>% enter_object(mutationsByTypes) %>% 
+  gather_array() %>% 
+  enter_object(mutations) %>% 
+  gather_array(column.name = "x") %>% spread_all() %>% 
+  select(document.id,array.index,text) %>%
+  filter(document.id=="2") %>%
+  as_tibble()
+classification_types_mutations <- left_join(classification_of_mutations,mutations,
+                                            by=c("document.id","array.index")) %>%
+  mutate_at(c(4),~replace_na(.,""))
+#Changing mutationType to accommodate the collapsing of
+# IN (Major,Accessory,Other --> Major/Other)
+collapsing_mutationtype <- classification_types_mutations %>%
+  mutate(mutationType=case_when(document.id==2 & mutationType=="Accessory"~"Other",
+                                TRUE~mutationType)) %>%
+  filter(!(mutationType=="Other" & text==""))
+
+collapsing_mutations <- collapsing_mutationtype %>%  
+  group_by(document.id,mutationType) %>% 
+  summarise_all(toString) %>%
+  select(-c(array.index))
+
+adding_text_if_required <- collapsing_mutations %>%
+  mutate(text=case_when(document.id==2 & text == ""~"No mutations of this type were detected",
+                        TRUE ~ text))
+int_major_mutations <- as.character(adding_text_if_required[1,3])
+int_other_mutations <- as.character(adding_text_if_required[2,3])
+
+#Drug resistance comments####
+#Looking at if any comments are available
+any_comments <-raw_json[[2]][[1]]$report$drugResistance %>% 
+  enter_object(commentsByTypes) %>% 
+  filter(document.id=="2") %>% 
+  json_lengths() %>% 
+  as_tibble() %>%
+  select(length) %>%
+  pull()
+
+if(any_comments==0){
+  int_major_comments <- "No comment"
+  int_other_comments <- "No comment"
+}else{
+  #Type of comments
+  type_of_comments <- raw_json[[2]][[1]]$report$drugResistance %>% 
+    enter_object(commentsByTypes) %>%
+    gather_array() %>%
+    spread_all() %>%
+    select(document.id,commentType,array.index) %>%
+    filter(document.id=="2") %>%
+    as_tibble()
+  drug_resistance_comments <- raw_json[[2]][[1]]$report$drugResistance %>% 
+    enter_object(commentsByTypes) %>% 
+    gather_array() %>% 
+    enter_object(comments) %>% 
+    gather_array(column.name = "x") %>% 
+    spread_all() %>%
+    select("document.id","text","array.index") %>% 
+    filter(document.id=="2") %>%
+    as_tibble()
+  #Join comments to type of comment
+  joining_type_drug_comments <- left_join(type_of_comments,drug_resistance_comments,by=c("document.id","array.index")) %>% 
+    select(-c(array.index))
+  #Remove dosage type(replace with Other)
+  joining_type_drug_comments <- joining_type_drug_comments %>%
+    mutate(commentType=case_when(commentType=="Dosage"~"Other",
+                                 TRUE~commentType))
+  #Wanting to look at this by mutation type
+  type_of_classification_simplified <- classification_of_mutations %>%
+    mutate(mutationType=case_when(mutationType=="Accessory"~"Other",
+                                  TRUE~mutationType)) %>%
+    select(-c(array.index)) %>%
+    distinct()
+  #Type of mutation and comment joined
+  type_mutation_and_comment_joined <- left_join(type_of_classification_simplified,joining_type_drug_comments,
+                                                by=c("document.id","mutationType"="commentType"))
+  #Replace NA with 'No comments'
+  type_mutation_and_comment_joined$text <- replace_na(type_mutation_and_comment_joined$text,
+                                                      "No comment")
+  
+  #Comments
+  int_major_comments <- type_mutation_and_comment_joined %>%
+    filter(document.id=="2" & mutationType=="Major") %>%
+    select(text) %>%
+    pull()
+  int_other_comments <- type_mutation_and_comment_joined %>%
+    filter(document.id=="2" & mutationType=="Other") %>%
+    select(text) %>%
+    pull()
+  
+}
+
+#Parameters for log file
+minimum_read_depth <- raw_json[[2]][[1]]$report$minPositionReads
+nucleotide_mixture_threshold <- raw_json[[2]][[1]]$report$maxMixtureRate
+mutation_detection_threshold <- raw_json[[2]][[1]]$report$minPrevalence
+
+hivdb_version <- raw_json[[2]][[1]]$currentVersion$text
+hivdb_version_date <- raw_json[[2]][[1]]$currentVersion$publishDate
+hivdb_version_date <- format(as.Date(hivdb_version_date),"%d/%m/%Y")
+hivdb_version_date <- paste0(hivdb_version,",",hivdb_version_date)
+
+sierra_version <- raw_json[[2]][[1]]$currentProgramVersion$text
+sierra_version_date <- raw_json[[2]][[1]]$currentProgramVersion$publishDate
+sierra_version_date <- format(as.Date(sierra_version_date),"%d/%m/%Y")
+sierra_version_date <- paste0(sierra_version,",",sierra_version_date)
+
+log_df <- data.frame(Sample_ID = character(),    # Create empty data frame
+                     Metadata_added=character(),
+                    Minimum_Read_Depth=character(),
+                    Nucleotide_Mixture_Threshold=character(),
+                    Mutation_Detection_Threshold=character(),
+                    Sierra_version_date=character(),
+                    HIVdb_version_date=character(),
+                    stringsAsFactors = FALSE)
+
+log_df[1,] <- list(sample_info,meta_added,
+                     minimum_read_depth,nucleotide_mixture_threshold,
+                     mutation_detection_threshold,sierra_version_date,
+                   hivdb_version_date)
+technical_file_name <- paste0(dir_name,"/","technical_log_",sample_info,".csv")
+write.csv(log_df,technical_file_name,row.names=FALSE)
+#Drug_resistance
+drug_resistance_log <- drug_resistance %>% select(Drug,`Resistance Call`)
+drug_resistance_log <- as.data.frame(drug_resistance_log)
+drug_names <- drug_resistance_log[,1]
+df_drug_resistance_log <- as.data.frame(as.matrix(t(drug_resistance_log[,-1])))
+colnames(df_drug_resistance_log) <- drug_names
+df_drug_resistance_log <- cbind(Sample_ID=sample_info,df_drug_resistance_log)
+output_file_ds <- paste0(dir_name,"/","drug_susceptibility_",sample_info,".csv")
+write.csv(df_drug_resistance_log,output_file_ds,row.names = FALSE)
+
+#Date and time created
+date_time <- format(Sys.time(),"%d/%m/%Y,%H:%M")
+```
+
+# HIV Drug Resistance Report
+
+## Patient information
+
+Name: **`r patient_name`** 
+
+Sex: **`r patient_sex`** 
+
+DOB/Age: **`r patient_age`** 
+
+H&C number/SP Number: **`r patient_number`** 
+
+Lab no: **`r v_number`**
+
+## Sequence summary
+
+Sequence includes HIV1 IN, codons `r in_region` missing: `r missing_in_region`
+
+### HIV subtype: HIV subtype cannot be determined from integrase alone
+
+```{r echo=FALSE}
+kable(drug_resistance)
+```
+---
+
+Date of specimen collection: `r specimen_date_collection` &nbsp; &nbsp; &nbsp; &nbsp; Specimen type: `r specimen_type` &nbsp; &nbsp; &nbsp; &nbsp; Date received: `r date_received`
+
+\newpage
+
+## Significant mutations
+
+**Integrase inhibitor mutations**: `r int_major_mutations`
+
+## Other mutations
+
+**IN other mutations:** `r int_other_mutations`
+
+## Significant comments
+
+**INT comments:**
+
+`r int_major_comments`
+
+## Other comments
+
+**IN comments:**
+
+`r int_other_comments`
+
+## Definitions for drug susceptibility
+\begingroup
+\fontfamily{phv}\fontsize{8}{8}\selectfont
+"Susceptible" indicates no evidence of reduced ARV susceptibility compared with a wild-type virus.  
+"Potential low-level resistance" indicates that the sequence may contain mutations indicating previous ARV exposure or may contain mutation that are associated with drug resistance only when they occur with additional mutations.   
+"Low-level resistance" indicates that there that the virus encoded by the submitted sequence may have reduced in vitro ARV susceptibility or that patients harboring viruses with the submitted mutations may have a suboptimal virological response to treatment with the ARV. "Intermediate resistance" indicates a high likelihood that a drug's activity will be reduced but that the drug will likely retain significant remaining antiviral activity.   
+High-level resistance" indicates that the predicted level of resistance is similar to those observed in viruses with the highest levels of in vitro drug resistance or that clinical data exist demonstrating that patients infected with viruses having such mutations usually have little or no virological response to treatment with the ARV.
+Further information is available [here](https://hivdb.stanford.edu/page/release-notes/).
+\endgroup
+
+---
+
+Date and time created: `r date_time`
