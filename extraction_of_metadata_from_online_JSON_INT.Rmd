@@ -59,12 +59,12 @@ specimen_type <- ""
 date_received <- ""
 
 path <- paste0(dir_name,"/","patient_metadata.xlsx")
-patient_metadata <-read_excel(path=path,col_types = c("text","text","text","text","date","text","date","text","date"))
+patient_metadata <-read_excel(path=path,col_types = c("text","text","text","date","text","date","text","date","text","text","text"))%>% select(-c(10,11))
 
 patient_metadata_date <- patient_metadata %>% 
-    mutate_at(c(5,7,9),format, "%d/%m/%Y")
+    mutate_at(c(4,6,8),format, "%d/%m/%Y")
 patient_metadata_name <- patient_metadata_date %>%
-  mutate_at(vars(2,3), ~ substr(.,1,1)) %>%
+  mutate_at(vars(1,2), ~ substr(.,1,1)) %>%
   unite(Name,c(Forename,Surname),sep=",")
 
 #bind to v_number and will incorporate message if no bind occurs
