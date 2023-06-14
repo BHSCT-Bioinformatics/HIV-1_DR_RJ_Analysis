@@ -58,7 +58,7 @@ specimen_date_collection <- ""
 specimen_type <- ""
 date_received <- ""
 
-path <- paste0(dir_name,"/","patient_metadata_mock.xlsx")
+path <- paste0(dir_name,"/","patient_metadata.xlsx")
 patient_metadata <-read_excel(path=path,col_types = c("text","text","text","text","date","text","date","text","date"))
 
 
