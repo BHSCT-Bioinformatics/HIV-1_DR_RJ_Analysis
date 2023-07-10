@@ -59,7 +59,7 @@ specimen_type <- ""
 date_received <- ""
 
 path <- paste0(dir_name,"/","patient_metadata.xlsx")
-patient_metadata <-read_excel(path=path,col_types = c("text","text","text","date","text","date","text","date","text","text","text"))%>% select(-c(10,11))
+patient_metadata <-read_excel(path=path,skip=3,col_types = c("text","text","text","date","text","date","text","date","text","text","text"))%>% select(-c(10,11))
 
 patient_metadata_date <- patient_metadata %>% 
     mutate_at(c(4,6,8),format, "%d/%m/%Y")
