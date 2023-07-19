@@ -21,6 +21,7 @@ output:
 #my_packages <- c("knitr","dplyr","tidyr","tidyjson","tinytex") 
 #not_installed <- my_packages[!(my_packages %in% installed.packages()[ , "Package"])]    # Extract not installed packages
 #if(length(not_installed)) install.packages(not_installed)
+library(rmarkdown)
 library(knitr)
 library(dplyr)
 library(tidyr)
