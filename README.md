@@ -7,7 +7,6 @@ Although 'raw JSON report' outputs are available following submission of paired 
 
 ![](https://github.com/BHSCT-Bioinformatics/HIV-1_DR_RJ_Analysis/blob/main/Clinical_report_generation_workflow_v2.drawio.png?raw=true)
 
-
 ## Installation
 
 
