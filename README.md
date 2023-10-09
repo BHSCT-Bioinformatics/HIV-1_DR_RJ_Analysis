@@ -14,7 +14,7 @@ Clone the HIV-1_DR_RJ_Analysis folder into your working directory
 `git clone https://github.com/BHSCT-Bioinformatics/HIV-1_DR_RJ_Analysis.git`
 
 ## Usage
-This tool uses a folder of raw `JSON` files which have previously been downloaded from Stanford's University HIV-1 resistance webpage which are outputs from their HIV-1 NGS pipeline. The raw `JSON` folder needs to be copied into the `HIV-1_DR_RJ_Analysis` folder. Additionally within the raw `JSON` folder needs to be the patient metadata file (`xlsx` format). 
+This tool uses a folder of raw `JSON` files which have previously been downloaded from Stanford's University HIV-1 resistance webpage which are outputs from their HIV-1 NGS pipeline. The raw `JSON` folder needs to be copied into the `HIV-1_DR_RJ_Analysis` folder. Additionally within the raw `JSON` folder needs to be the relevant patient metadata file (`xlsx` format). 
 
 ***Note:*** The patient metadata (Name, DOB, H&C number, Laboratory number, Type of specimen, Date of specimen collection, Date of specimen received) are desirable fields for our BHSCT clinicians and might not be relevant for other users. Furthmore within the `HIV-1_DR_RJ_Analysis` folder is the BHSCT logo (`belfast_trust_logo.png`) which will only be applicable to BHSCT users.
 
@@ -22,11 +22,12 @@ Running the `test_dataset` folder included in this Github repository
 
 `Rscript HIV_resistance_report_online_only.R test_dataset`
 
-
 ### Outputs
 - Bespoke clinical reports (`.pdf`)
 - Combined drug susceptibilities to ARVs and HIV-1 subtype for run samples (`combined_drug_susceptibilities.csv`)
 - Combined technical log files for run samples (`combined_technical_logs.csv`)
+
+Examples are available in `test_dataset_output`
 
 **Column headers of combined_technical_logs.csv file**
   
@@ -35,7 +36,7 @@ Running the `test_dataset` folder included in this Github repository
 |            |                |                    |                              |                              |                     |                    |
 
 
-***Note:*** In the combined_technical_logs.csv the `Metadata_added` column is crucial to investigate as a clinical report will be generated irrespective.
+***Note:*** In the combined_technical_logs.csv the `Metadata_added` column is crucial to investigate as a clinical report will be generated irrespective of metadata being present.
 The two options are:
 - 'Yes'
 - 'Problems were encountered when joining patient data. Verify that the lab number is accurate' (Will need to be adressed).
