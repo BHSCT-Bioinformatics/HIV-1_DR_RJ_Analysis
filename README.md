@@ -10,10 +10,23 @@ Although 'raw JSON report' outputs are available following submission of paired 
 ## Installation
 
 Clone the HIV-1_DR_RJ_Analysis folder into your working directory
-`git clone git@github.com:BHSCT-Bioinformatics/HIV-1_DR_RJ_Analysis.git
 
+`git clone https://github.com/BHSCT-Bioinformatics/HIV-1_DR_RJ_Analysis.git`
 
 ## Usage
+
+
+### Dependencies
+This tool is dependent on various R packages (currently tested with R version 4.3.1) which are all available on [CRAN](https://cran.r-project.org/)
+- [rmarkdown 2.23](https://cran.r-project.org/web/packages/rmarkdown/index.html)
+- [knitr 1.43](https://cran.r-project.org/web/packages/knitr/index.html)
+- [plyr 1.88](https://cran.r-project.org/web/packages/plyr/index.html)
+- [dplyr 1.12](https://cran.r-project.org/web/packages/dplyr/index.html)
+- [tidyr 1.30](https://cran.r-project.org/web/packages/tidyr/index.html)
+- [tidyjson 0.32](https://cran.r-project.org/web/packages/tidyjson/index.html)
+- [tinytex 0.45](https://cran.r-project.org/web/packages/tinytex/index.html)
+- [readxl 1.43](https://cran.r-project.org/web/packages/readxl/index.html)
+
 
 ## Author
 - Marc Niebel (Bioinformatician at Regional Virology Laboratory, Belfast)
