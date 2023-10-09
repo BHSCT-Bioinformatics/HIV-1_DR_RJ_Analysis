@@ -9,6 +9,8 @@ Although 'raw JSON report' outputs are available following submission of paired 
 
 ## Installation
 
+Clone the HIV-1_DR_RJ_Analysis folder into your working directory
+`git clone git@github.com:BHSCT-Bioinformatics/HIV-1_DR_RJ_Analysis.git
 
 
 ## Usage
