@@ -1,0 +1,4 @@
+"Sample_ID","Metadata_added","Minimum_Read_Depth","Nucleotide_Mixture_Threshold","Mutation_Detection_Threshold","Sierra_version_date","HIVdb_version_date"
+"V1902918","Problems were encountered when joining patient data. Verify that the lab number is accurate",50,0.02,0.2,"3.4.3,26/04/2023","HIVDB_9.4,07/12/2022"
+"V33024431-I","Yes",50,0.02,0.2,"3.4.3,26/04/2023","HIVDB_9.4,07/12/2022"
+"V33024595","Yes",50,0.02,0.2,"3.4.3,26/04/2023","HIVDB_9.4,07/12/2022"
