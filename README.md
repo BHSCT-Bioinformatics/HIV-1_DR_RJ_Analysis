@@ -53,6 +53,8 @@ This tool is dependent on various R packages (currently tested with R version 4.
 - [tinytex 0.45](https://cran.r-project.org/web/packages/tinytex/index.html)
 - [readxl 1.43](https://cran.r-project.org/web/packages/readxl/index.html)
 
+## License
+
 
 ## Author
 - Marc Niebel (Bioinformatician at Regional Virology Laboratory, Belfast)
