@@ -1,3 +1,6 @@
+![Static Badge](https://img.shields.io/badge/Language-R%20version%204.3.1-blue)
+
+
 # HIV-1_DR_RJ_Analysis: HIV-1 Drug Resistance Reporting from JSON files
 
 ## Overview
