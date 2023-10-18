@@ -1,4 +1,5 @@
-![Static Badge](https://img.shields.io/badge/Language-R%20version%204.3.1-blue)
+![Static Badge](https://img.shields.io/badge/Language-R%20version%204.3.1-blue) ![Static Badge](https://img.shields.io/badge/License-GPLv3-red)
+
 
 
 # HIV-1_DR_RJ_Analysis: HIV-1 Drug Resistance Reporting from JSON files
@@ -57,6 +58,7 @@ This tool is dependent on various R packages (currently tested with R version 4.
 - [readxl 1.43](https://cran.r-project.org/web/packages/readxl/index.html)
 
 ### License
+HIV-1_DR_RJ_Analysis is licensed under [GPL v3](https://github.com/BHSCT-Bioinformatics/HIV-1_DR_RJ_Analysis/blob/main/LICENSE)
 
 
 ## Author
