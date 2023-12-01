@@ -72,7 +72,7 @@ patient_metadata_name <- patient_metadata_date %>%
 #bind to v_number and will incorporate message if no bind occurs
 df_v_number <-data.frame(Specimen_Number=v_number)
 
-join_with_metadata <- left_join(df_v_number,patient_metadata_name,by=join_by("Specimen_Number"==`Specimen Number`))
+join_with_metadata <- left_join(df_v_number,patient_metadata_name,by=join_by("Specimen_Number"==`Specimen Number`)) %>% distinct()
 
 #Checking whether join was successful#NEW
 join_with_metadata <- join_with_metadata %>%
