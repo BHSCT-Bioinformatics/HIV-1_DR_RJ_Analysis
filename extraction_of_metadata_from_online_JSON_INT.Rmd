@@ -67,7 +67,7 @@ if(number_of_cols_patient_metadata==11){
   patient_metadata <- patient_metadata %>%
     select(-c(10,11))
   patient_metadata <- patient_metadata %>%
-    mutate_at(c(4,6,8),format, "d/%m/%Y")
+    mutate_at(c(4,6,8),format, "%d/%m/%Y")
 }
 
 patient_metadata_name <- patient_metadata %>%
