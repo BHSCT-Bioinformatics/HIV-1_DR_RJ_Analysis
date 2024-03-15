@@ -241,6 +241,7 @@ joining_type_drug_comments<- left_join(type_of_comments,drug_resistance_comments
 #Remove dosage type(replace with Other)
 joining_type_drug_comments <- joining_type_drug_comments %>%
   mutate(commentType=case_when(commentType=="Dosage"~"Other",
+			       commentType == "Accessory" ~ "Other",
                                  TRUE~commentType))
 #Wanting to look at this by mutation type
 type_of_classification_simplified <- classification_of_mutations %>%
@@ -252,9 +253,17 @@ type_of_classification_simplified <- classification_of_mutations %>%
 type_mutation_and_comment_joined <-
   left_join(type_of_classification_simplified,joining_type_drug_comments,
                                             by=c("document.id","mutationType"="commentType"))
-#Replace NA with 'No comments'
-type_mutation_and_comment_joined$text <- replace_na(type_mutation_and_comment_joined$text,
-                                                      "No comment")
+
+# Replace NA with 'No comments'
+type_mutation_and_comment_joined$text <- replace_na(type_mutation_and_comment_joined$text, "No comments")
+
+#Collapse if same document.id and mutationType
+type_mutation_and_comment_joined <- type_mutation_and_comment_joined %>%
+	group_by(document.id, mutationType) %>%
+	dplyr::mutate(text=paste(text,collapse= " ")) %>%
+	distinct() %>%
+	ungroup()
+
 #Comments
 major_pr_comments <- type_mutation_and_comment_joined %>%
   filter(document.id=="1" & mutationType=="Major") %>%
