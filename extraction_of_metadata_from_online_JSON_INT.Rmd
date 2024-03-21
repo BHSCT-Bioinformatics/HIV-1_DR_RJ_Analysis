@@ -249,7 +249,7 @@ if(any_comments==0){
 
   type_mutation_and_comment_joined <- type_mutation_and_comment_joined %>%
 	  group_by(document.id,mutationType) %>%
-	  dplyr:mutate(text=paste(text,collapse= " ")) %>%
+	  dplyr::mutate(text=paste(text,collapse= " ")) %>%
 	  distinct() %>%
 	  ungroup()
   
