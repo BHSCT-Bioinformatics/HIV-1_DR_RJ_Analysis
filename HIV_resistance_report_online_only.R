@@ -35,12 +35,12 @@ if(json_folder_patient_metadata==1){
   
     #Acceptable suffixes for all_regions workflow are:
     #C,R,RC
-    if(suffix =="C"|suffix=="R"|suffix=="RC"|suffix=="OR"|(suffix_length >7 & suffix_length<12)){
+    if(suffix =="C"|suffix =="R"|suffix =="RC"|suffix =="OR"|(suffix_length >7 & suffix_length<12)){
       rmarkdown::render(
         "/home/mniebel/HIV-1_DR_RJ_Analysis/extraction_of_metadata_from_online_JSON_all_regions.Rmd",
         params = list(input_json=input_json),output_dir=args[1],
         output_file=paste0(sample_id,".pdf"))
-    }else if(suffix == "I"){
+    }else if(suffix == "I"|suffix == "RI"){
       rmarkdown::render(
         "/home/mniebel/HIV-1_DR_RJ_Analysis/extraction_of_metadata_from_online_JSON_INT.Rmd",
         params = list(input_json=input_json), output_dir=args[1],
